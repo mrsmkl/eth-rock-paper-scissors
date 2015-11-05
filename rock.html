@@ -300,6 +300,8 @@ function makeSelection(s) {
         var state = ev.args.result.toNumber();
         var p1 = ev.args.p1.toString(16);
         var p2 = ev.args.p2.toString(16);
+        if (p1 == localAccount) p1 += "(It's you!)";
+        if (p2 == localAccount) p2 += "(It's you!)";
         var r1 = enym[ev.args.v1.toNumber()];
         var r2 = enym[ev.args.v2.toNumber()];
         var id = conv(ev.args.id);
