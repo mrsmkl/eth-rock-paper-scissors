@@ -1,9 +1,96 @@
 <!doctype html>
 
+<link href='https://fonts.googleapis.com/css?family=Abel' rel='stylesheet' type='text/css'>
+
 <style>
     
+    #contract {
+        display: none;
+    }
+    
+    .game {
+        height: 50px;
+    }
+    
+    @keyframes finish {
+        0% {color: black;}
+        60% {color: #660000;}
+        100% {color: black;}
+    }
+
+    @keyframes ready {
+        0% {color: black;}
+        60% {color: #333300;}
+        100% {color: black;}
+    }
+    
+    @keyframes anim {
+        0% {text-shadow: 0px 0px 10px white;}
+        50% {text-shadow: 0px 0px 10px gray;}
+        100% {text-shadow: 0px 0px 10px white;}
+    }
     .own {
-        background-color: green;
+        animation-name: anim;
+        animation-duration: 3s;
+        animation-iteration-count: infinite;
+    }
+    
+    h1 {
+        animation-name: anim;
+        animation-duration: 3s;
+        animation-iteration-count: infinite;
+    }
+    
+    .finishing {
+        animation-name: finish;
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+    }
+    
+    .ready {
+        animation-name: ready;
+        animation-duration: 2s;
+        animation-iteration-count: infinite;
+    }
+    
+    .own.finishing {
+        animation-name: finish, anim;
+        animation-duration: 2s, 3s;
+        animation-iteration-count: infinite;
+    }
+    
+    .own.ready {
+        animation-name: ready, anim;
+        animation-duration: 2s, 3s;
+        animation-iteration-count: infinite;
+    }
+    
+    body {
+        font-family: 'Abel', sans-serif;
+        margin:  10px 10%;
+        background: linear-gradient(to right, #5c5c5c 0%, #424242 100%);
+    }
+    
+    
+    button {
+        font-family: 'Abel', sans-serif;
+        font-size: 18px;
+        background-color: black;
+        color: gray;
+        border: 1px solid gray;
+        margin: 3px;
+    }
+    
+    button:hover {
+        color: white;
+    }
+    
+    button:focus {
+    }
+    
+    button:active {
+        text-shadow: 0px 0px 10px white;
+        border: 1px solid white;
     }
     
 </style>
@@ -19,21 +106,23 @@
 <script src="lib/hooked-web3-provider.js"></script>
 <script src="lib/jquery-1.7.min.js"></script>
 
+<h1>Rock &#x270a;, Paper &#x270b;, Scissors &#x270c;!</h1>
+
 <h2>Start new game</h2>
 
 Make your choice:
 
-<button onclick="start(0);">Rock</button>
-<button onclick="start(1);">Paper</button>
-<button onclick="start(2);">Scissors</button>
+<button onclick="start(0);">Rock &#x270a;</button>
+<button onclick="start(1);">Paper &#x270b;</button>
+<button onclick="start(2);">Scissors &#x270c;</button>
 <br>
-Money left <span id="money"></span> on <tt><span id="account"></span></tt>.
+Ether left <span id="money">???</span> on <tt><span id="account">???</span></tt>. Send ether to your account to play.
 
 <p>
     
     Wait for a while to get the state confirmed in the blockchain.
 
-<h2>Running games</h2>
+<h2>Available games</h2>
 
 <div id="list">
 </div>
@@ -43,6 +132,16 @@ Money left <span id="money"></span> on <tt><span id="account"></span></tt>.
 You can cancel your own games if nobody has replied yet. Reply with your choice (rock/paper/scissors) to challenges. When somebody has replied to your challenge, you need to
 show your choice. If a game has been pending for too long (the original choice was not revealed), trigger a timeout to declare the replier to be winner.
 
+    <h2>About</h2>
+
+Source: <a href="https://github.com/mrsmkl/eth-rock-paper-scissors">Github</a>
+
+<p>
+    
+    <a onclick="$('#contract').toggle();">Contract</a>
+
+    <pre id="contract"></pre>
+    
 <script>
     
     var web3 = new Web3();
@@ -105,7 +204,7 @@ function makeSelection(s) {
     
     function nop() {}
     
-    var enym = ["Rock", "Paper", "Scissors", "Timeout"];
+    var enym = ["Rock &#x270a;", "Paper &#x270b;", "Scissors &#x270c;", "Timeout &#x25f4;"];
 
     function byte_to_str(arr) {
         var res = "";
@@ -132,6 +231,7 @@ function makeSelection(s) {
         r.reply("0x"+id, sel, {value:1, from:localAccount}, nop);
         replied[id] = sel;
         process(id, 6);
+        $("#"+id).addClass("finishing");
     }
 
     function cancel(id) {
@@ -139,12 +239,17 @@ function makeSelection(s) {
         process(id, 7);
     }
     
+    var showed = {};
+    
     function show(id) {
         r.show("0x"+id, "0x"+stored[id], {from:localAccount}, nop);
+        showed[id] = true;
+        process(id, 2);
     }
     
     function timeout(id) {
         r.timeout("0x"+id, {from:localAccount}, nop);
+        $("#"+id).addClass("finishing");
     }
     
     function conv(id) {
@@ -157,30 +262,32 @@ function makeSelection(s) {
         if (state == 0) return;
         if ($("#"+id).length == 0) {
             var cls = state == 5 ? "own" : "other";
-            $("#list").append('<div id="' + id + '" class="'+ cls + '"></div>'); 
+            $("#list").append('<div id="' + id + '" class="game '+ cls + '"></div>'); 
         }
         if (state == 1 && replied[id] == undefined) {
-            var res = "Challenge <tt>0x" + id + "</tt> ";
+            var res = "Challenge <tt>0x" + id + "</tt>, Your reply: ";
             var sid = "\'" + id + "\'";
-            if (stored[id]) res += '<button onclick="cancel(' + sid + ')">Cancel</button>';
-            res += '<button onclick="reply(0, ' + sid + ')">Rock</button>';
-            res += '<button onclick="reply(1, ' + sid + ')">Paper</button>';
-            res += '<button onclick="reply(2, ' + sid + ')">Scissors</button>';
+            if (stored[id]) res += '<button title="Cancel your game before somebody replies." onclick="cancel(' + sid + ')">Cancel</button>';
+            res += '<button title="Send answer." onclick="reply(0, ' + sid + ')">Rock &#x270a;</button>';
+            res += '<button title="Send answer." onclick="reply(1, ' + sid + ')">Paper &#x270b;</button>';
+            res += '<button title="Send answer." onclick="reply(2, ' + sid + ')">Scissors &#x270c;</button>';
         }
         else if (state == 2) {
             var res = "Pending resolution <tt>0x" + id + "</tt> ";
             var sid = "\'" + id + "\'";
-            if (stored[id]) res += '<button onclick="show(' + sid + ')">Show</button>';
-            res += '<button onclick="timeout(' + sid + ')">Timeout</button>';
+            if (replied[id] != undefined) res += ", Sent reply " + enym[replied[id]];
+            if (showed[id]) res += '<button class="show" title="Try showing again if it did not register for some reason." onclick="show(' + sid + ')">Show again</button>';
+            else if (stored[id]) res += '<button class="show" title="Show your choice to resolve the game." onclick="show(' + sid + ')">Show</button>';
+            res += '<button onclick="timeout(' + sid + ')" title="Initiator has not revealed his choice yet. Attempt to resolve the game.">Timeout &#x25F4;</button>';
         }
         else if (state == 5) {
-            var res = "Challenge <tt>0x" + id + "</tt> Adding...";
+            var res = "Challenge <tt>0x" + id + "</tt>, Adding...";
         }
         else if (state == 6) {
-            var res = "Challenge <tt>0x" + id + "</tt> Sent reply " + enym[replied[id]];
+            var res = "Challenge <tt>0x" + id + "</tt>, Sent reply " + enym[replied[id]];
         }
         else if (state == 6) {
-            var res = "Challenge <tt>0x" + id + "</tt> Cancelled";
+            var res = "Challenge <tt>0x" + id + "</tt>, Cancelled";
         }
         $("#"+id).html(res);
     }
@@ -196,7 +303,8 @@ function makeSelection(s) {
         if (state == 0) res += "In <tt>0x" + id + "</tt>," + p1 + " and " + p2 + " selected the same " + r1 + " == " + r2;
         if (state == 1) res += "In <tt>0x" + id + "</tt>," + p1 + "(" + r1 + ") wins " + p2 + "(" + r2 + ")";
         if (state == 2) res += "In <tt>0x" + id + "</tt>," + p1 + "(" + r1 + ") loses to " + p2 + "(" + r2 + ")";
-        $("#"+id).html("<div>" + res + ' <button onclick="$(\'#' + id + '\').remove();">Ok</button></div>');
+        $("#"+id).html(res + ' <button onclick="$(\'#' + id + '\').remove();" title="Remove the game from the list.">Ok</button>');
+        $("#"+id).addClass("ready").removeClass("finishing");
     }
     
     var num = 0;
@@ -216,6 +324,7 @@ function makeSelection(s) {
     }
 
     setInterval(update, 5000);
+    update();
     
     var ev_list = [];
     
@@ -226,13 +335,11 @@ function makeSelection(s) {
             processResult(result);
         }
     });
+    
+    $.get("rock.sol", function (dta) { $("#contract").text(dta); });
 
 </script>
 
 
-<body>
-    
-    
-    
-</body>
+
 
