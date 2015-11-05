@@ -245,6 +245,7 @@ function makeSelection(s) {
         r.show("0x"+id, "0x"+stored[id], {from:localAccount}, nop);
         showed[id] = true;
         process(id, 2);
+        $("#"+id).addClass("finishing");
     }
     
     function timeout(id) {
