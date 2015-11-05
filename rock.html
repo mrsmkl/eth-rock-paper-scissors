@@ -116,7 +116,7 @@ Make your choice:
 <button onclick="start(1);">Paper &#x270b;</button>
 <button onclick="start(2);">Scissors &#x270c;</button>
 <br>
-Ether left <span id="money">???</span> on <tt><span id="account">???</span></tt>. Send ether to your account to play. (Note that this is on my test chain currently.)
+Ether left <span id="money">???</span> on <tt><span id="account">???</span></tt>. Send ether to your account to play.
 
 <p>
     
@@ -179,6 +179,7 @@ var rockpaperscissorsContract = web3.eth.contract([{"constant":false,"inputs":[{
     
 /*
   
+var rockpaperscissorsContract = web3.eth.contract([{"constant":false,"inputs":[{"name":"commit","type":"uint256"}],"name":"timeout","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"commit","type":"uint256"}],"name":"cancel","outputs":[],"type":"function"},{"constant":false,"inputs":[],"name":"getLog","outputs":[{"name":"","type":"uint256[]"}],"type":"function"},{"constant":false,"inputs":[{"name":"commit","type":"uint256"}],"name":"start","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"commit","type":"uint256"},{"name":"value","type":"uint256"}],"name":"show","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"i","type":"uint32"}],"name":"poll","outputs":[{"name":"","type":"uint256"}],"type":"function"},{"constant":false,"inputs":[],"name":"collect","outputs":[],"type":"function"},{"constant":false,"inputs":[{"name":"commit","type":"uint256"},{"name":"rep","type":"uint8"}],"name":"reply","outputs":[],"type":"function"},{"constant":false,"inputs":[],"name":"cleanLog","outputs":[{"name":"","type":"uint256[]"}],"type":"function"},{"inputs":[],"type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"name":"id","type":"uint256"},{"indexed":false,"name":"p1","type":"address"},{"indexed":false,"name":"p2","type":"address"},{"indexed":false,"name":"result","type":"uint8"},{"indexed":false,"name":"v1","type":"uint8"},{"indexed":false,"name":"v2","type":"uint8"}],"name":"Resolved","type":"event"}]);
 var rockpaperscissors = rockpaperscissorsContract.new(
    {
      from: web3.eth.accounts[0], 
@@ -193,7 +194,7 @@ var rockpaperscissors = rockpaperscissorsContract.new(
 
 */
 
-var r = rockpaperscissorsContract.at("0x87eacda8a6aefd517ed3a313e5b683e109849eef");
+var r = rockpaperscissorsContract.at("0x5f7496281485b05efaff759e635eadd05f258ce1");
 
 function makeSelection(s) {
     var res = [];
@@ -202,7 +203,9 @@ function makeSelection(s) {
     return res;
 }
     
-    function nop() {}
+    function nop(err,x) {
+        if (err) console.log(err);
+    }
     
     var enym = ["Rock &#x270a;", "Paper &#x270b;", "Scissors &#x270c;", "Timeout &#x25f4;"];
 
@@ -220,7 +223,7 @@ function makeSelection(s) {
         var sel = makeSelection(s);
         stored[keccak_256(sel)] = byte_to_str(sel);
         var id = keccak_256(sel);
-        r.start("0x"+id, {value:1, from:localAccount}, function () { process(id, 5); });
+        r.start("0x"+id, {value:1, from:localAccount, gas:300000, gasPrice:"50000000000"}, function (err) { if (err) console.log(err); else process(id, 5); });
         // r.reply("0x"+keccak_256(sel), 2, {value:1});
         // r.show("0x"+keccak_256(sel), "0x"+byte_to_str(sel));
     }
@@ -228,28 +231,28 @@ function makeSelection(s) {
     var replied = {};
 
     function reply(sel, id) {
-        r.reply("0x"+id, sel, {value:1, from:localAccount}, nop);
+        r.reply("0x"+id, sel, {value:1, from:localAccount, gas:300000, gasPrice:"50000000000"}, nop);
         replied[id] = sel;
         process(id, 6);
         $("#"+id).addClass("finishing");
     }
 
     function cancel(id) {
-        r.cancel("0x"+id, {from:localAccount}, nop);
+        r.cancel("0x"+id, {from:localAccount, gas:300000, gasPrice:"50000000000"}, nop);
         process(id, 7);
     }
     
     var showed = {};
     
     function show(id) {
-        r.show("0x"+id, "0x"+stored[id], {from:localAccount}, nop);
+        r.show("0x"+id, "0x"+stored[id], {from:localAccount, gas:300000, gasPrice:"50000000000"}, nop);
         showed[id] = true;
         process(id, 2);
         $("#"+id).addClass("finishing");
     }
     
     function timeout(id) {
-        r.timeout("0x"+id, {from:localAccount}, nop);
+        r.timeout("0x"+id, {from:localAccount, gas:300000, gasPrice:"50000000000"}, nop);
         $("#"+id).addClass("finishing");
     }
     
